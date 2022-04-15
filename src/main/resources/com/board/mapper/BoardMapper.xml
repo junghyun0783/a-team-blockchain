@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.board.mapper.BoardMapper">
+ 
+ 	<select id="getList" resultType="boardVO">
+ 		<![CDATA[
+ 			SELECT
+ 				* 
+ 			FROM
+ 				board
+ 			WHERE
+ 				bno > 0
+ 		]]>
+ 	</select>
+ 	
+ 	<sql id="criteria">
+ 		<trim prefix="where" prefixOverrides="or">
+           <foreach item="type" collection="typeArr">
+              <trim prefix="or">
+                <choose>
+                   <when test="type == 'T'.toString()">
+                      title like '%'||#{keyword}||'%'
+                   </when>
+                   <when test="type == 'C'.toString()">
+                      content like '%'||#{keyword}||'%'
+                   </when>   
+                   <when test="type == 'W'.toString()">
+                      writer like '%'||#{keyword}||'%'
+                   </when>                     
+                </choose>               
+              </trim>
+           </foreach>
+        </trim>
+ 	</sql>
+ 	
+ 	
+ 	<select id="getListWithPaging" resultType="boardVO">
+      <![CDATA[
+         select bno, title, content, writer, regdate, updatedate from
+             (select rownum r, bno, title, content, writer, regdate, updatedate from 
+                 (select /*+ INDEX_DESC(board pk_board)*/ 
+                  bno, title, content, writer, regdate, updatedate 
+                  from board
+       ]]>
+       
+       <include refid="criteria"></include>
+       
+       <![CDATA[ 
+                  ) 
+             where rownum <= (#{pageNum} * #{listQty} )) 
+         where r > (#{pageNum} - 1) * #{listQty}
+      ]]>
+   </select>
+ 	
+ 	<!-- 전체 글의 개수 가져오기 : 전체 일때랑 검색했을때 두방법 모두 사용 -->
+ 	<select id="getTotalCount" resultType="int">
+ 		select count(*) from board
+ 	</select>
+ 
+ 	<!-- insert하고 bno 따로 사용할일 없으면 아래 insert 사용 -->
+ 	<insert id="insert">
+ 		INSERT INTO
+ 			board(bno, title, content, writer)
+ 		VALUES
+ 			(board_seq.nextval, #{title}, #{content}, #{writer})
+ 	</insert>
+ 
+ 	<!-- insert 쿼리 실행하고 bno 값이 바로 필요하면 아래꺼 사용 -->
+ 	<insert id="insertSelectKey">
+ 		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+ 			select board_seq.nextval from dual
+ 		</selectKey>
+ 		INSERT INTO
+ 			board(bno, title, content, writer)
+ 		VALUES
+ 			(#{bno}, #{title}, #{content}, #{writer})
+ 	</insert>
+ 
+ 	<!-- 글 한개 가져오기 -->
+ 	<select id="read" resultType="boardVO">
+ 		SELECT 
+ 			* 
+ 		FROM 
+ 			board 
+ 		WHERE
+ 			bno = #{bno}
+ 	</select>
+ 	
+ 	<!-- 글 삭제 -->
+ 	<delete id="delete">
+ 		DELETE FROM 
+ 			board 
+ 		WHERE 
+ 			bno = #{bno}
+ 	</delete>
+ 
+ 	<!-- 글 수정 -->
+ 	<update id="update">
+ 		UPDATE
+ 			board
+ 		SET
+ 			title =#{title}, content= #{content}, writer= #{writer}, updateDate=sysdate
+ 		WHERE
+ 			bno = #{bno}
+ 	</update>
+ 
+ 	<!-- 조회 -->
+ 	
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ </mapper>
